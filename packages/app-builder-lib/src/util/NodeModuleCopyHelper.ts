@@ -8,6 +8,7 @@ import { PlatformPackager } from "../platformPackager.js"
 import { FileCopyHelper } from "./AppFileWalker.js"
 import { NodeModuleInfo } from "../node-module-collector/types.js"
 import { resolveFunction } from "./resolve.js"
+import { isForeignPrebuildDir, PrebuildTarget } from "./archCompatibility.js"
 
 const excludedFiles = new Set(
   [
@@ -45,9 +46,20 @@ const topLevelExcludedFiles = new Set([
 
 /** @internal */
 export class NodeModuleCopyHelper extends FileCopyHelper {
-  constructor(matcher: FileMatcher, packager: PlatformPackager<any>) {
+  /**
+   * @param prebuildTarget when set, `prebuilds/<platform>-<arch>` directories that cannot be loaded on this
+   *   target are not copied (see `NativeModulesConfig.excludeForeignPrebuilds`)
+   */
+  constructor(
+    matcher: FileMatcher,
+    packager: PlatformPackager<any>,
+    private readonly prebuildTarget: PrebuildTarget | null = null
+  ) {
     super(matcher, matcher.isEmpty() ? null : matcher.createFilter(), packager)
   }
+
+  /** `<module>/prebuilds/<dir>` of every prebuild directory left out because of {@link prebuildTarget}. */
+  readonly excludedPrebuilds: Array<string> = []
 
   async collectNodeModules(moduleInfo: NodeModuleInfo, nodeModuleExcludedExts: Array<string>, destination: string): Promise<Array<string>> {
     const filter = this.filter
@@ -65,6 +77,7 @@ export class NodeModuleCopyHelper extends FileCopyHelper {
     // The path should be corrected in Windows that when the moduleName is Scoped packages named.
     const depPath = path.normalize(tmpPath)
     queue[0] = depPath
+    const prebuildTarget = this.prebuildTarget
 
     while (queue.length > 0) {
       const dirPath = queue.pop()!
@@ -99,6 +112,11 @@ export class NodeModuleCopyHelper extends FileCopyHelper {
             if (name.endsWith(ext)) {
               return null
             }
+          }
+
+          if (prebuildTarget != null && path.relative(depPath, dirPath) === "prebuilds" && isForeignPrebuildDir(name, prebuildTarget)) {
+            this.excludedPrebuilds.push(`${moduleName}/prebuilds/${name}`)
+            return null
           }
 
           // noinspection SpellCheckingInspection

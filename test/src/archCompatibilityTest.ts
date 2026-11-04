@@ -4,6 +4,7 @@ import {
   buildSingleArchFilesPattern,
   collectIdenticalSingleArchMachOFiles,
   collectSingleArchPackageNames,
+  isForeignPrebuildDir,
   isPackageCompatible,
   isSingleArchPackage,
 } from "app-builder-lib/src/util/archCompatibility"
@@ -206,4 +207,45 @@ describe("collectIdenticalSingleArchMachOFiles", () => {
     const flagged = await collectIdenticalSingleArchMachOFiles(path.join(tmpdir(), "missing-eb-a"), path.join(tmpdir(), "missing-eb-b"))
     expect(flagged).toEqual([])
   })
+})
+
+describe("isForeignPrebuildDir", () => {
+  const cases: Array<[string, string, string | null, boolean]> = [
+    // the target's own directory, including fat macOS prebuilds
+    ["linux-x64", "linux", "x64", false],
+    ["win32-x64", "win32", "x64", false],
+    ["darwin-x64+arm64", "darwin", "arm64", false],
+    ["darwin-arm64+x64", "darwin", "x64", false],
+    // another architecture of the target platform
+    ["linux-arm64", "linux", "x64", true],
+    ["win32-ia32", "win32", "x64", true],
+    ["darwin-x64", "darwin", "arm64", true],
+    // another platform
+    ["darwin-x64+arm64", "linux", "x64", true],
+    ["android-arm", "win32", "x64", true],
+    ["linux-x64", "win32", "x64", true],
+    // universal slices (no cpu): every architecture of the platform is kept, other platforms are not
+    ["darwin-x64", "darwin", null, false],
+    ["darwin-arm64", "darwin", null, false],
+    ["linux-arm64", "darwin", null, true],
+    // libc / simulator variants: kept for the target's own platform/arch, dropped otherwise
+    ["linux-x64-musl", "linux", "x64", false],
+    ["linux-arm64-musl", "linux", "x64", true],
+    ["linux-x64-musl", "win32", "x64", true],
+    ["ios-arm64-simulator", "darwin", "arm64", true],
+    ["ios-arm64", "darwin", null, true],
+    // names that are not node-gyp-build target directories are always kept
+    ["README.md", "win32", "x64", false],
+    ["foo-bar", "win32", "x64", false],
+    ["linux-x64.tar.gz", "win32", "x64", false],
+    ["-x64", "win32", "x64", false],
+    ["linux-", "win32", "x64", false],
+    ["linux-x64-", "win32", "x64", false],
+    ["windows-x64", "linux", "x64", false],
+  ]
+  for (const [name, platform, cpu, expected] of cases) {
+    test(`${name} for ${platform}-${cpu ?? "any"} -> ${expected}`, ({ expect }) => {
+      expect(isForeignPrebuildDir(name, { platform, cpu })).toBe(expected)
+    })
+  }
 })

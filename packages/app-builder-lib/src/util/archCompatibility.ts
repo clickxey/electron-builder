@@ -213,3 +213,44 @@ export function buildSingleArchFilesPattern(patterns: Iterable<string>, userPatt
   const detected = sorted.length === 1 ? sorted[0] : `{${sorted.join(",")}}`
   return userPattern ? `{${userPattern},${detected}}` : detected
 }
+
+/**
+ * Target a `prebuilds/` directory is matched against. `cpu` is a Node.js `process.arch` name, or `null` to
+ * keep every architecture of the target platform (macOS universal slices, which must stay symmetric for the merge).
+ */
+export interface PrebuildTarget {
+  readonly platform: string
+  readonly cpu: string | null
+}
+
+// Operating-system names that prebuild directories start with: Node.js `process.platform` values, plus `ios` (used by
+// packages that also target mobile runtimes). A directory whose first segment is not one of these is not a prebuild directory.
+const PREBUILD_PLATFORMS = new Set(["aix", "android", "cygwin", "darwin", "freebsd", "haiku", "ios", "linux", "netbsd", "openbsd", "sunos", "win32"])
+
+/**
+ * Whether `name`, a directory directly inside a package's `prebuilds/` directory, holds prebuilt addons that can
+ * never be loaded on `target`.
+ *
+ * Prebuild loaders (node-gyp-build for prebuildify, used by classic-level, serialport, utf-8-validate, …; require-addon,
+ * used by sodium-native and other Holepunch modules) only ever look in `prebuilds/<platform>-<arch>[-<variant>]/`, where the
+ * arch part may list several architectures joined by `+` for fat binaries (`darwin-x64+arm64`) and the optional variant
+ * names a libc or simulator flavor (`linux-x64-musl`, `ios-arm64-simulator`). A directory for another platform, or for
+ * another architecture of the target platform, is dead weight for this target. Variants of the target's own
+ * platform/arch are kept.
+ *
+ * Only names of exactly that shape are considered; any other name is kept.
+ */
+export function isForeignPrebuildDir(name: string, target: PrebuildTarget): boolean {
+  const [platform, archList, ...variants] = name.split("-")
+  if (archList == null || !PREBUILD_PLATFORMS.has(platform)) {
+    return false
+  }
+  const arches = archList.split("+")
+  if ([...arches, ...variants].some(it => !/^[a-z0-9]+$/.test(it))) {
+    return false
+  }
+  if (platform !== target.platform) {
+    return true
+  }
+  return target.cpu != null && !arches.includes(target.cpu)
+}

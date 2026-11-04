@@ -1,6 +1,7 @@
 import { FileMatcher } from "app-builder-lib/internal"
 import type { NodeModuleInfo } from "app-builder-lib/src/node-module-collector/types"
 import type { PlatformPackager } from "app-builder-lib/src/platformPackager"
+import type { PrebuildTarget } from "app-builder-lib/src/util/archCompatibility"
 import { NodeModuleCopyHelper } from "app-builder-lib/src/util/NodeModuleCopyHelper"
 import type { Filter } from "builder-util"
 import fsExtra from "fs-extra"
@@ -28,7 +29,14 @@ async function createModule(tmpDir: { getTempDir(): Promise<string> }) {
   return { projectDir, moduleDir }
 }
 
-async function collect(projectDir: string, moduleDir: string, hook: Hook, patterns: Array<string> | null, onFilter?: (file: string) => void) {
+async function collect(
+  projectDir: string,
+  moduleDir: string,
+  hook: Hook,
+  patterns: Array<string> | null,
+  onFilter?: (file: string) => void,
+  prebuildTarget: PrebuildTarget | null = null
+) {
   const packager = {
     appInfo: { type: undefined },
     config: { onNodeModuleFile: hook },
@@ -46,7 +54,7 @@ async function collect(projectDir: string, moduleDir: string, hook: Hook, patter
       }
     })
   }
-  const helper = new NodeModuleCopyHelper(matcher, packager)
+  const helper = new NodeModuleCopyHelper(matcher, packager, prebuildTarget)
   const moduleInfo: NodeModuleInfo = { name: MODULE_NAME, version: "1.0.0", dir: moduleDir }
   const files = await helper.collectNodeModules(moduleInfo, EXCLUDED_EXTS, destination)
   return files.map(it => path.relative(moduleDir, it).replace(/\\/g, "/")).sort()
@@ -95,5 +103,65 @@ describe("NodeModuleCopyHelper.collectNodeModules", () => {
     rootDirChecks = 0
     await collect(projectDir, moduleDir, () => true, NEGATION_PATTERNS, onFilter)
     expect(rootDirChecks).toBe(1)
+  })
+
+  describe("prebuilds", () => {
+    const PREBUILDS = [
+      "prebuilds/darwin-x64+arm64/foo.node",
+      "prebuilds/linux-arm64/foo.glibc.node",
+      "prebuilds/linux-x64/foo.glibc.node",
+      "prebuilds/linux-x64/foo.musl.node",
+      "prebuilds/win32-x64/foo.node",
+      "prebuilds/notes.txt",
+      // only the package's own prebuilds/ directory is what node-gyp-build loads from
+      "lib/prebuilds/win32-x64/data.bin",
+    ]
+
+    async function createPrebuildModule(tmpDir: { getTempDir(): Promise<string> }) {
+      const { projectDir, moduleDir } = await createModule(tmpDir)
+      for (const file of PREBUILDS) {
+        await fsExtra.outputFile(path.join(moduleDir, file), file)
+      }
+      return { projectDir, moduleDir }
+    }
+
+    const prebuildFiles = (files: Array<string>) => files.filter(it => it.includes("prebuilds/"))
+
+    test("keeps every prebuild without a target", async ({ expect, tmpDir }) => {
+      const { projectDir, moduleDir } = await createPrebuildModule(tmpDir)
+      expect(prebuildFiles(await collect(projectDir, moduleDir, null, null))).toEqual([...PREBUILDS].sort())
+    })
+
+    test("keeps only the target's prebuilds", async ({ expect, tmpDir }) => {
+      const { projectDir, moduleDir } = await createPrebuildModule(tmpDir)
+      expect(prebuildFiles(await collect(projectDir, moduleDir, null, null, undefined, { platform: "linux", cpu: "x64" }))).toEqual([
+        "lib/prebuilds/win32-x64/data.bin",
+        "prebuilds/linux-x64/foo.glibc.node",
+        "prebuilds/linux-x64/foo.musl.node",
+        "prebuilds/notes.txt",
+      ])
+    })
+
+    test("keeps a fat macOS prebuild for either slice", async ({ expect, tmpDir }) => {
+      const { projectDir, moduleDir } = await createPrebuildModule(tmpDir)
+      expect(prebuildFiles(await collect(projectDir, moduleDir, null, null, undefined, { platform: "darwin", cpu: "arm64" }))).toEqual([
+        "lib/prebuilds/win32-x64/data.bin",
+        "prebuilds/darwin-x64+arm64/foo.node",
+        "prebuilds/notes.txt",
+      ])
+    })
+
+    test("an onNodeModuleFile hook returning true keeps a foreign prebuild", async ({ expect, tmpDir }) => {
+      const { projectDir, moduleDir } = await createPrebuildModule(tmpDir)
+      const hook: Hook = file => file.endsWith(`${path.sep}win32-x64`) || file.includes(`win32-x64${path.sep}`)
+      // as for the other default exclusions, the hook only wins where the `files` patterns match too
+      expect(prebuildFiles(await collect(projectDir, moduleDir, hook, ["**/*"], undefined, { platform: "linux", cpu: "x64" }))).toEqual([
+        "lib/prebuilds/win32-x64/data.bin",
+        "prebuilds/linux-x64/foo.glibc.node",
+        "prebuilds/linux-x64/foo.musl.node",
+        "prebuilds/notes.txt",
+        "prebuilds/win32-x64/foo.node",
+      ])
+    })
   })
 })

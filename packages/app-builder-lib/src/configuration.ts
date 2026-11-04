@@ -680,6 +680,25 @@ export interface NativeModulesConfig {
    * @default true
    */
   readonly verifyNativeBinaries?: boolean | "warn" | null
+
+  /**
+   * Whether to leave out the prebuilt native addons that dependencies ship for other platforms and architectures.
+   *
+   * Packages built with [prebuildify](https://github.com/prebuild/prebuildify) and loaded with `node-gyp-build`
+   * publish the addon for every supported target in one npm package, under `prebuilds/<platform>-<arch>/`
+   * (e.g. `prebuilds/darwin-x64+arm64/`, `prebuilds/linux-arm64/`, `prebuilds/win32-x64/`). At runtime
+   * `node-gyp-build` only ever looks in the directory matching `process.platform` and `process.arch`, so the other
+   * directories can never be loaded by the packaged app and only add to its size.
+   *
+   * When enabled, a directory directly inside a package's `prebuilds/` directory is not copied if its name is of
+   * that `<platform>-<arch>[+<arch>…][-<variant>]` form (e.g. `linux-x64-musl`) and names another platform, or another architecture than the one
+   * being packed. For a macOS universal build both slices keep every macOS architecture, so they stay identical
+   * for the merge. Directories with any other name are always copied. As with the other default exclusions, an
+   * `onNodeModuleFile` hook returning `true` for a directory still copies it.
+   *
+   * @default true
+   */
+  readonly excludeForeignPrebuilds?: boolean | null
 }
 
 export type Hook<T, V> = (contextOrPath: T) => Promise<V> | V
