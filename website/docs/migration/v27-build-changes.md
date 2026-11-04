@@ -29,6 +29,7 @@ In v27 every `toolsets.*` property defaults to **`"latest"`**: an **unset** prop
 | [Redundant production `dependencies` excluded, not rejected](#redundant-production-dependencies-are-excluded-not-rejected) | Info log / warns | `electron`/`electron-builder` are excluded from the copied `node_modules` (was a hard error); tune the set via `ignoredProductionDependencies`. If you set `ALLOW_ELECTRON_BUILDER_AS_PRODUCTION_DEPENDENCY` (removed) to bundle `electron-builder`, override the list instead; `electron-prebuilt`/`electron-rebuild` no longer error and now ship if declared — remove them from `dependencies` |
 | [`allowMissingDependencies` now fails the build](#allowmissingdependencies-now-fails-the-build) | Fails build | A missing production dependency is a hard error; set `allowMissingDependencies: true` to restore v26 warn-only behavior |
 | [Native binaries are verified against the target](#native-binaries-are-verified-against-the-target) | Fails build | A `.node` addon built for another platform/arch now fails the build; set `nativeModules.verifyNativeBinaries: "warn"` (or `false`) to package anyway |
+| [Dependency source maps are excluded](#dependency-source-maps-are-excluded) | Warns | `*.js.map`, `*.mjs.map`, `*.cjs.map` and `*.css.map` files inside `node_modules` are no longer packaged; return `true` from `onNodeModuleFile` to keep one |
 | [`extraFiles` / `extraResources` `to` is validated](#extrafiles--extraresources-destinations-are-validated) | Fails build | An absolute `to`, or one escaping the output dir, now throws |
 | [`asar.ordering` is now applied](#asar-ordering-is-now-applied) | Warns; missing file fails | v26 ignored the option; v27 packs the listed files first and fails when the file is missing. Remove the option to keep the dependencies-first layout |
 | [`arch: "all"` now expands to x64 + arm64; 32-bit fails fast on Electron 44+](#arch-all-now-expands-to-x64-and-arm64-32-bit-fails-fast-on-electron-44) | Warns / fails | `arch: "all"` drops `ia32` — request `ia32` explicitly; ia32/armv7l require `electronVersion` <= 43.x |
@@ -294,6 +295,21 @@ Other native files (`.so`, `.dylib`, `.dll`, `.exe`, extensionless executables) 
 Relatedly, `nativeModules.buildDependenciesFromSource` no longer skips the native rebuild for a target whose platform differs from the host (which shipped the host's binary). Native modules cannot be cross-compiled from source, so for such a target the rebuild runs with prebuilt binaries for the target instead, and a warning is logged.
 
 **Action is required only if** a build fails here — rebuild native dependencies for the target (for a cross-platform target, the module needs a prebuilt binary for it), or opt out as above.
+
+### Dependency source maps are excluded {#dependency-source-maps-are-excluded}
+
+**How you'll find out:** **Warns once**, with the number of files left out and a link here.
+
+Source maps of JavaScript and CSS files (`*.js.map`, `*.mjs.map`, `*.cjs.map`, `*.css.map`) and TypeScript declaration maps (`*.d.ts.map`, `*.d.mts.map`, `*.d.cts.map`) inside `node_modules` are no longer copied into the app. Nothing loads them at runtime: only DevTools reads them, and it then reports the map as missing for library code. Some packages ship more map than code (firebase 13: 32 MB of its 40 MB; pdfjs-dist 6: 20 MB of 38 MB). Other `*.map` files (game levels, for instance) and your app's own source maps outside `node_modules` are not affected.
+
+**Action is required only if** something in your app reads a dependency's source map at runtime (for example to symbolicate stack traces inside library code). Force-include the maps you need:
+
+```js
+// electron-builder.config.js
+module.exports = {
+  onNodeModuleFile: file => file.includes("/node_modules/some-lib/") && file.endsWith(".map"),
+}
+```
 
 ### `extraFiles` / `extraResources` destinations are validated {#extrafiles--extraresources-destinations-are-validated}
 

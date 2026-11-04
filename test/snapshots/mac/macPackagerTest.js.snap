@@ -1718,15 +1718,7 @@ exports[`macPackager > yarn two package.json w/ native module 3`] = `
                   "size": "<size>",
                   "unpacked": true,
                 },
-                "conpty_console_list_agent.js.map": {
-                  "size": "<size>",
-                  "unpacked": true,
-                },
                 "eventEmitter2.js": {
-                  "size": "<size>",
-                  "unpacked": true,
-                },
-                "eventEmitter2.js.map": {
                   "size": "<size>",
                   "unpacked": true,
                 },
@@ -1734,23 +1726,11 @@ exports[`macPackager > yarn two package.json w/ native module 3`] = `
                   "size": "<size>",
                   "unpacked": true,
                 },
-                "eventEmitter2.test.js.map": {
-                  "size": "<size>",
-                  "unpacked": true,
-                },
                 "index.js": {
                   "size": "<size>",
                   "unpacked": true,
                 },
-                "index.js.map": {
-                  "size": "<size>",
-                  "unpacked": true,
-                },
                 "interfaces.js": {
-                  "size": "<size>",
-                  "unpacked": true,
-                },
-                "interfaces.js.map": {
                   "size": "<size>",
                   "unpacked": true,
                 },
@@ -1760,17 +1740,9 @@ exports[`macPackager > yarn two package.json w/ native module 3`] = `
                       "size": "<size>",
                       "unpacked": true,
                     },
-                    "conout.js.map": {
-                      "size": "<size>",
-                      "unpacked": true,
-                    },
                   },
                 },
                 "terminal.js": {
-                  "size": "<size>",
-                  "unpacked": true,
-                },
-                "terminal.js.map": {
                   "size": "<size>",
                   "unpacked": true,
                 },
@@ -1778,15 +1750,7 @@ exports[`macPackager > yarn two package.json w/ native module 3`] = `
                   "size": "<size>",
                   "unpacked": true,
                 },
-                "terminal.test.js.map": {
-                  "size": "<size>",
-                  "unpacked": true,
-                },
                 "testUtils.test.js": {
-                  "size": "<size>",
-                  "unpacked": true,
-                },
-                "testUtils.test.js.map": {
                   "size": "<size>",
                   "unpacked": true,
                 },
@@ -1794,15 +1758,7 @@ exports[`macPackager > yarn two package.json w/ native module 3`] = `
                   "size": "<size>",
                   "unpacked": true,
                 },
-                "types.js.map": {
-                  "size": "<size>",
-                  "unpacked": true,
-                },
                 "unixTerminal.js": {
-                  "size": "<size>",
-                  "unpacked": true,
-                },
-                "unixTerminal.js.map": {
                   "size": "<size>",
                   "unpacked": true,
                 },
@@ -1810,15 +1766,7 @@ exports[`macPackager > yarn two package.json w/ native module 3`] = `
                   "size": "<size>",
                   "unpacked": true,
                 },
-                "unixTerminal.test.js.map": {
-                  "size": "<size>",
-                  "unpacked": true,
-                },
                 "utils.js": {
-                  "size": "<size>",
-                  "unpacked": true,
-                },
-                "utils.js.map": {
                   "size": "<size>",
                   "unpacked": true,
                 },
@@ -1826,15 +1774,7 @@ exports[`macPackager > yarn two package.json w/ native module 3`] = `
                   "size": "<size>",
                   "unpacked": true,
                 },
-                "windowsConoutConnection.js.map": {
-                  "size": "<size>",
-                  "unpacked": true,
-                },
                 "windowsPtyAgent.js": {
-                  "size": "<size>",
-                  "unpacked": true,
-                },
-                "windowsPtyAgent.js.map": {
                   "size": "<size>",
                   "unpacked": true,
                 },
@@ -1842,15 +1782,7 @@ exports[`macPackager > yarn two package.json w/ native module 3`] = `
                   "size": "<size>",
                   "unpacked": true,
                 },
-                "windowsPtyAgent.test.js.map": {
-                  "size": "<size>",
-                  "unpacked": true,
-                },
                 "windowsTerminal.js": {
-                  "size": "<size>",
-                  "unpacked": true,
-                },
-                "windowsTerminal.js.map": {
                   "size": "<size>",
                   "unpacked": true,
                 },
@@ -1858,17 +1790,9 @@ exports[`macPackager > yarn two package.json w/ native module 3`] = `
                   "size": "<size>",
                   "unpacked": true,
                 },
-                "windowsTerminal.test.js.map": {
-                  "size": "<size>",
-                  "unpacked": true,
-                },
                 "worker": {
                   "files": {
                     "conoutSocketWorker.js": {
-                      "size": "<size>",
-                      "unpacked": true,
-                    },
-                    "conoutSocketWorker.js.map": {
                       "size": "<size>",
                       "unpacked": true,
                     },
@@ -2076,43 +2000,24 @@ exports[`macPackager > yarn two package.json w/ native module 4`] = `
   "app.asar.unpacked/node_modules/node-pty/scripts/post-install.js",
   "app.asar.unpacked/node_modules/node-pty/scripts/publish.js",
   "app.asar.unpacked/node_modules/node-pty/lib/conpty_console_list_agent.js",
-  "app.asar.unpacked/node_modules/node-pty/lib/conpty_console_list_agent.js.map",
   "app.asar.unpacked/node_modules/node-pty/lib/eventEmitter2.js",
-  "app.asar.unpacked/node_modules/node-pty/lib/eventEmitter2.js.map",
   "app.asar.unpacked/node_modules/node-pty/lib/eventEmitter2.test.js",
-  "app.asar.unpacked/node_modules/node-pty/lib/eventEmitter2.test.js.map",
   "app.asar.unpacked/node_modules/node-pty/lib/index.js",
-  "app.asar.unpacked/node_modules/node-pty/lib/index.js.map",
   "app.asar.unpacked/node_modules/node-pty/lib/interfaces.js",
-  "app.asar.unpacked/node_modules/node-pty/lib/interfaces.js.map",
   "app.asar.unpacked/node_modules/node-pty/lib/terminal.js",
-  "app.asar.unpacked/node_modules/node-pty/lib/terminal.js.map",
   "app.asar.unpacked/node_modules/node-pty/lib/terminal.test.js",
-  "app.asar.unpacked/node_modules/node-pty/lib/terminal.test.js.map",
   "app.asar.unpacked/node_modules/node-pty/lib/testUtils.test.js",
-  "app.asar.unpacked/node_modules/node-pty/lib/testUtils.test.js.map",
   "app.asar.unpacked/node_modules/node-pty/lib/types.js",
-  "app.asar.unpacked/node_modules/node-pty/lib/types.js.map",
   "app.asar.unpacked/node_modules/node-pty/lib/unixTerminal.js",
-  "app.asar.unpacked/node_modules/node-pty/lib/unixTerminal.js.map",
   "app.asar.unpacked/node_modules/node-pty/lib/unixTerminal.test.js",
-  "app.asar.unpacked/node_modules/node-pty/lib/unixTerminal.test.js.map",
   "app.asar.unpacked/node_modules/node-pty/lib/utils.js",
-  "app.asar.unpacked/node_modules/node-pty/lib/utils.js.map",
   "app.asar.unpacked/node_modules/node-pty/lib/windowsConoutConnection.js",
-  "app.asar.unpacked/node_modules/node-pty/lib/windowsConoutConnection.js.map",
   "app.asar.unpacked/node_modules/node-pty/lib/windowsPtyAgent.js",
-  "app.asar.unpacked/node_modules/node-pty/lib/windowsPtyAgent.js.map",
   "app.asar.unpacked/node_modules/node-pty/lib/windowsPtyAgent.test.js",
-  "app.asar.unpacked/node_modules/node-pty/lib/windowsPtyAgent.test.js.map",
   "app.asar.unpacked/node_modules/node-pty/lib/windowsTerminal.js",
-  "app.asar.unpacked/node_modules/node-pty/lib/windowsTerminal.js.map",
   "app.asar.unpacked/node_modules/node-pty/lib/windowsTerminal.test.js",
-  "app.asar.unpacked/node_modules/node-pty/lib/windowsTerminal.test.js.map",
   "app.asar.unpacked/node_modules/node-pty/lib/worker/conoutSocketWorker.js",
-  "app.asar.unpacked/node_modules/node-pty/lib/worker/conoutSocketWorker.js.map",
   "app.asar.unpacked/node_modules/node-pty/lib/shared/conout.js",
-  "app.asar.unpacked/node_modules/node-pty/lib/shared/conout.js.map",
   "app.asar.unpacked/node_modules/node-pty/deps/winpty/LICENSE",
   "app.asar.unpacked/node_modules/node-pty/deps/winpty/Makefile",
   "app.asar.unpacked/node_modules/node-pty/deps/winpty/README.md",

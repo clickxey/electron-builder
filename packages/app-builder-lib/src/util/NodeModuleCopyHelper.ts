@@ -24,6 +24,11 @@ const excludedFiles = new Set(
   ].concat(DEFAULT_EXCLUDED_NAMES)
 )
 
+// Source maps of JavaScript and CSS files, and declaration maps (the `.d.ts` files they map are excluded by default already):
+// nothing loads them at runtime (only DevTools, which then reports the map as missing). Some packages ship more map than code
+// (firebase 13: 32 MB of its 40 MB, pdfjs-dist 6: 20 MB of 38 MB).
+const sourceMapSuffixes = [".js.map", ".mjs.map", ".cjs.map", ".css.map", ".d.ts.map", ".d.mts.map", ".d.cts.map"]
+
 const topLevelExcludedFiles = new Set([
   "karma.conf.js",
   ".coveralls.yml",
@@ -48,6 +53,9 @@ export class NodeModuleCopyHelper extends FileCopyHelper {
   constructor(matcher: FileMatcher, packager: PlatformPackager<any>) {
     super(matcher, matcher.isEmpty() ? null : matcher.createFilter(), packager)
   }
+
+  /** How many dependency source maps were left out (see {@link sourceMapSuffixes}). */
+  excludedSourceMaps = 0
 
   async collectNodeModules(moduleInfo: NodeModuleInfo, nodeModuleExcludedExts: Array<string>, destination: string): Promise<Array<string>> {
     const filter = this.filter
@@ -100,6 +108,11 @@ export class NodeModuleCopyHelper extends FileCopyHelper {
             if (name.endsWith(ext)) {
               return null
             }
+          }
+
+          if (sourceMapSuffixes.some(suffix => name.endsWith(suffix))) {
+            this.excludedSourceMaps++
+            return null
           }
 
           // noinspection SpellCheckingInspection

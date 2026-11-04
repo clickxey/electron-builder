@@ -103,4 +103,29 @@ describe("NodeModuleCopyHelper.collectNodeModules", () => {
     await collect(projectDir, moduleDir, () => true, NEGATION_PATTERNS, onFilter)
     expect(rootDirChecks).toBe(1)
   })
+
+  describe("source maps", () => {
+    const MAPS = ["index.js.map", "index.d.ts.map", "lib/util.mjs.map", "lib/util.cjs.map", "styles.css.map"]
+
+    async function createModuleWithMaps(tmpDir: { getTempDir(): Promise<string> }) {
+      const { projectDir, moduleDir } = await createModule(tmpDir)
+      // `world.map` is data (e.g. a game level), not a source map, and must be kept
+      for (const file of [...MAPS, "assets/world.map"]) {
+        await fsExtra.outputFile(path.join(moduleDir, file), file)
+      }
+      return { projectDir, moduleDir }
+    }
+
+    test("leaves out JavaScript and CSS source maps but keeps other *.map files", async ({ expect, tmpDir }) => {
+      const { projectDir, moduleDir } = await createModuleWithMaps(tmpDir)
+      expect(await collect(projectDir, moduleDir, null, null)).toEqual(["assets/world.map", "index.js", "lib/README.md", "lib/negated.js", "lib/util.js", "package.json"])
+    })
+
+    test("an onNodeModuleFile hook returning true keeps a source map", async ({ expect, tmpDir }) => {
+      const { projectDir, moduleDir } = await createModuleWithMaps(tmpDir)
+      const files = await collect(projectDir, moduleDir, file => file.endsWith("index.js.map"), null)
+      expect(files).toContain("index.js.map")
+      expect(files).not.toContain("lib/util.mjs.map")
+    })
+  })
 })
