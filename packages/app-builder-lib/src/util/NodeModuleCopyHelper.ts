@@ -80,7 +80,8 @@ export class NodeModuleCopyHelper extends FileCopyHelper {
       let dirMatched: Promise<boolean> | undefined
       const isDirMatched = () => {
         if (dirMatched === undefined) {
-          dirMatched = filter == null ? Promise.resolve(false) : fsExtra.lstat(dirPath).then(stat => filter(dirPath, stat))
+          // Without `files` negations there is no filter, so nothing in the configuration excludes the directory.
+          dirMatched = filter == null ? Promise.resolve(true) : fsExtra.lstat(dirPath).then(stat => filter(dirPath, stat))
         }
         return dirMatched
       }
