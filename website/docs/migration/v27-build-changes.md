@@ -29,6 +29,7 @@ In v27 every `toolsets.*` property defaults to **`"latest"`**: an **unset** prop
 | [Redundant production `dependencies` excluded, not rejected](#redundant-production-dependencies-are-excluded-not-rejected) | Info log / warns | `electron`/`electron-builder` are excluded from the copied `node_modules` (was a hard error); tune the set via `ignoredProductionDependencies`. If you set `ALLOW_ELECTRON_BUILDER_AS_PRODUCTION_DEPENDENCY` (removed) to bundle `electron-builder`, override the list instead; `electron-prebuilt`/`electron-rebuild` no longer error and now ship if declared — remove them from `dependencies` |
 | [`allowMissingDependencies` now fails the build](#allowmissingdependencies-now-fails-the-build) | Fails build | A missing production dependency is a hard error; set `allowMissingDependencies: true` to restore v26 warn-only behavior |
 | [Native binaries are verified against the target](#native-binaries-are-verified-against-the-target) | Fails build | A `.node` addon built for another platform/arch now fails the build; set `nativeModules.verifyNativeBinaries: "warn"` (or `false`) to package anyway |
+| [Prebuilt native addons for other targets are excluded](#foreign-prebuilt-native-addons-are-excluded) | Warns | `prebuilds/<platform>-<arch>/` directories for other platforms/archs are no longer packaged; set `nativeModules.excludeForeignPrebuilds: false` to keep them |
 | [`extraFiles` / `extraResources` `to` is validated](#extrafiles--extraresources-destinations-are-validated) | Fails build | An absolute `to`, or one escaping the output dir, now throws |
 | [`asar.ordering` is now applied](#asar-ordering-is-now-applied) | Warns; missing file fails | v26 ignored the option; v27 packs the listed files first and fails when the file is missing. Remove the option to keep the dependencies-first layout |
 | [`arch: "all"` now expands to x64 + arm64; 32-bit fails fast on Electron 44+](#arch-all-now-expands-to-x64-and-arm64-32-bit-fails-fast-on-electron-44) | Warns / fails | `arch: "all"` drops `ia32` — request `ia32` explicitly; ia32/armv7l require `electronVersion` <= 43.x |
@@ -294,6 +295,20 @@ Other native files (`.so`, `.dylib`, `.dll`, `.exe`, extensionless executables) 
 Relatedly, `nativeModules.buildDependenciesFromSource` no longer skips the native rebuild for a target whose platform differs from the host (which shipped the host's binary). Native modules cannot be cross-compiled from source, so for such a target the rebuild runs with prebuilt binaries for the target instead, and a warning is logged.
 
 **Action is required only if** a build fails here — rebuild native dependencies for the target (for a cross-platform target, the module needs a prebuilt binary for it), or opt out as above.
+
+### Prebuilt native addons for other targets are excluded {#foreign-prebuilt-native-addons-are-excluded}
+
+**How you'll find out:** **Warns once**, listing the left-out directories, with a link here. Set the option explicitly to turn the warning into an info log.
+
+Packages built with [prebuildify](https://github.com/prebuild/prebuildify) (loaded through `node-gyp-build`) publish their native addon for every supported target in one npm package, under `prebuilds/<platform>-<arch>/` — for example `prebuilds/darwin-x64+arm64/`, `prebuilds/linux-arm64/`, `prebuilds/win32-x64/`. `node-gyp-build` only ever loads the directory matching `process.platform` and `process.arch`, so v26 shipped every other target's binaries as dead weight, often several MB per dependency.
+
+v27 leaves out a directory directly inside a package's `prebuilds/` directory when its name is of that `<platform>-<arch>[+<arch>…]` form and names another platform, or another architecture than the one being packed. For a macOS universal build both slices keep every macOS architecture, so they stay identical for the merge. Directories with any other name are kept.
+
+```json5
+{ "build": { "nativeModules": { "excludeForeignPrebuilds": false } } } // package every prebuild, as in v26
+```
+
+**Action is required only if** your app deliberately loads a prebuild for a different platform or architecture than the one it runs on; opt out as above.
 
 ### `extraFiles` / `extraResources` destinations are validated {#extrafiles--extraresources-destinations-are-validated}
 

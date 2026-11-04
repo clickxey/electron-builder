@@ -213,3 +213,42 @@ export function buildSingleArchFilesPattern(patterns: Iterable<string>, userPatt
   const detected = sorted.length === 1 ? sorted[0] : `{${sorted.join(",")}}`
   return userPattern ? `{${userPattern},${detected}}` : detected
 }
+
+/**
+ * Target a `prebuilds/` directory is matched against. `cpu` is a Node.js `process.arch` name, or `null` to
+ * keep every architecture of the target platform (macOS universal slices, which must stay symmetric for the merge).
+ */
+export interface PrebuildTarget {
+  readonly platform: string
+  readonly cpu: string | null
+}
+
+// `process.platform` values. A directory whose first segment is not one of these is not a prebuild directory.
+const NODE_PLATFORMS = new Set(["aix", "android", "darwin", "freebsd", "haiku", "linux", "netbsd", "openbsd", "sunos", "win32", "cygwin"])
+
+/**
+ * Whether `name`, a directory directly inside a package's `prebuilds/` directory, holds prebuilt addons that can
+ * never be loaded on `target`.
+ *
+ * node-gyp-build (prebuildify's loader, used by better-sqlite3 forks, classic-level, sodium-native, serialport,
+ * node-pty, utf-8-validate, …) only ever looks in `prebuilds/<process.platform>-<process.arch>/`, where the arch part
+ * may list several architectures joined by `+` for fat binaries (`darwin-x64+arm64`). Anything else in `prebuilds/`
+ * is dead weight for this target.
+ *
+ * Only names of exactly that `<platform>-<arch>[+<arch>…]` shape are considered; any other name is kept.
+ */
+export function isForeignPrebuildDir(name: string, target: PrebuildTarget): boolean {
+  const dash = name.indexOf("-")
+  if (dash <= 0) {
+    return false
+  }
+  const platform = name.slice(0, dash)
+  const arches = name.slice(dash + 1).split("+")
+  if (!NODE_PLATFORMS.has(platform) || arches.some(it => !/^[a-z0-9]+$/.test(it))) {
+    return false
+  }
+  if (platform !== target.platform) {
+    return true
+  }
+  return target.cpu != null && !arches.includes(target.cpu)
+}

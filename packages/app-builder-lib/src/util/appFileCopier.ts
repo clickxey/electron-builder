@@ -32,7 +32,7 @@ import { AppFileWalker } from "./AppFileWalker.js"
 import { NodeModuleCopyHelper } from "./NodeModuleCopyHelper.js"
 import { NodeModuleInfo } from "../node-module-collector/types.js"
 import { PlatformSpecificBuildOptions } from "../options/PlatformSpecificBuildOptions.js"
-import { archToNodeCpu } from "./archCompatibility.js"
+import { archToNodeCpu, PrebuildTarget } from "./archCompatibility.js"
 import { assertSourceFileInTrustedRoots } from "./trustedSourceRoots.js"
 import { BUILD_CHANGES_URL } from "./config/legacyOptions.js"
 
@@ -213,6 +213,12 @@ export async function computeNodeModuleFileSets(
 
   // the options this pack uses for the app files too (e.g. mac → mas → masDev cascaded), not always the platform section's own
   const nodeModuleExcludedExts = getNodeModuleExcludedExts(platformPackager, platformSpecificBuildOptions)
+  // Without the arch filter (macOS universal slices) keep every architecture of the platform so the slices match.
+  const prebuildTarget: PrebuildTarget | null =
+    platformPackager.config.nativeModules?.excludeForeignPrebuilds === false
+      ? null
+      : { platform: platformPackager.platform.nodeName, cpu: applyArchFilter ? archToNodeCpu(arch) : null }
+  const excludedPrebuilds: Array<string> = []
   // serial execution because copyNodeModules is concurrent and so, no need to increase queue/pressure
   const result = new Array<ResolvedFileSet>()
   let index = 0
@@ -226,8 +232,9 @@ export async function computeNodeModuleFileSets(
 
     const source = dep.dir
     const matcher = new FileMatcher(source, destination, mainMatcher.macroExpander, mainMatcher.patterns)
-    const copier = new NodeModuleCopyHelper(matcher, platformPackager)
+    const copier = new NodeModuleCopyHelper(matcher, platformPackager, prebuildTarget)
     const files = await copier.collectNodeModules(dep, nodeModuleExcludedExts, path.relative(mainMatcher.to, destination))
+    excludedPrebuilds.push(...copier.excludedPrebuilds)
     result[index++] = validateFileSet({ src: source, destination, files, metadata: copier.metadata })
 
     log.debug({ dep: dep.name, from: log.filePath(source), to: log.filePath(destination), filesCount: files.length }, "identified module")
@@ -243,7 +250,34 @@ export async function computeNodeModuleFileSets(
     const destination = path.join(mainMatcher.to, NODE_MODULES, dep.name)
     await collectNodeModules(dep, destination)
   }
+  logExcludedPrebuilds(excludedPrebuilds, platformPackager.config.nativeModules?.excludeForeignPrebuilds)
   return result
+}
+
+/** The v27 default change is announced once per process; a build can pack several targets. */
+let excludedPrebuildsDefaultAnnounced = false
+
+/**
+ * Reports the `prebuilds/<platform>-<arch>` directories left out by `nativeModules.excludeForeignPrebuilds`. While the
+ * option is unset (the v27 default) the first report is a warning that names the opt-out.
+ */
+function logExcludedPrebuilds(excluded: ReadonlyArray<string>, configured: boolean | null | undefined): void {
+  if (excluded.length === 0) {
+    return
+  }
+  const fields = { count: excluded.length, prebuilds: excluded }
+  if (configured == null && !excludedPrebuildsDefaultAnnounced) {
+    excludedPrebuildsDefaultAnnounced = true
+    log.warn(
+      fields,
+      "electron-builder v27 no longer packages prebuilt native addons that dependencies ship for other platforms/architectures " +
+        "(prebuilds/<platform>-<arch>/ directories that node-gyp-build never loads on this target). " +
+        "Set nativeModules.excludeForeignPrebuilds to false to package them anyway, or to true to silence this warning. " +
+        `See ${BUILD_CHANGES_URL}#foreign-prebuilt-native-addons-are-excluded`
+    )
+    return
+  }
+  log.info(fields, "excluded prebuilt native addons for other platforms/architectures")
 }
 
 type CollectedNodeModules = { nodeModules: NodeModuleInfo[]; logSummary: ModuleManager["logSummary"] }
