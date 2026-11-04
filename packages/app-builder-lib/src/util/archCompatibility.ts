@@ -223,28 +223,30 @@ export interface PrebuildTarget {
   readonly cpu: string | null
 }
 
-// `process.platform` values. A directory whose first segment is not one of these is not a prebuild directory.
-const NODE_PLATFORMS = new Set(["aix", "android", "darwin", "freebsd", "haiku", "linux", "netbsd", "openbsd", "sunos", "win32", "cygwin"])
+// Operating-system names that prebuild directories start with: Node.js `process.platform` values, plus `ios` (used by
+// packages that also target mobile runtimes). A directory whose first segment is not one of these is not a prebuild directory.
+const PREBUILD_PLATFORMS = new Set(["aix", "android", "cygwin", "darwin", "freebsd", "haiku", "ios", "linux", "netbsd", "openbsd", "sunos", "win32"])
 
 /**
  * Whether `name`, a directory directly inside a package's `prebuilds/` directory, holds prebuilt addons that can
  * never be loaded on `target`.
  *
- * node-gyp-build (prebuildify's loader, used by better-sqlite3 forks, classic-level, sodium-native, serialport,
- * node-pty, utf-8-validate, …) only ever looks in `prebuilds/<process.platform>-<process.arch>/`, where the arch part
- * may list several architectures joined by `+` for fat binaries (`darwin-x64+arm64`). Anything else in `prebuilds/`
- * is dead weight for this target.
+ * Prebuild loaders (node-gyp-build for prebuildify, used by classic-level, serialport, utf-8-validate, …; require-addon,
+ * used by sodium-native and other Holepunch modules) only ever look in `prebuilds/<platform>-<arch>[-<variant>]/`, where the
+ * arch part may list several architectures joined by `+` for fat binaries (`darwin-x64+arm64`) and the optional variant
+ * names a libc or simulator flavor (`linux-x64-musl`, `ios-arm64-simulator`). A directory for another platform, or for
+ * another architecture of the target platform, is dead weight for this target. Variants of the target's own
+ * platform/arch are kept.
  *
- * Only names of exactly that `<platform>-<arch>[+<arch>…]` shape are considered; any other name is kept.
+ * Only names of exactly that shape are considered; any other name is kept.
  */
 export function isForeignPrebuildDir(name: string, target: PrebuildTarget): boolean {
-  const dash = name.indexOf("-")
-  if (dash <= 0) {
+  const [platform, archList, ...variants] = name.split("-")
+  if (archList == null || !PREBUILD_PLATFORMS.has(platform)) {
     return false
   }
-  const platform = name.slice(0, dash)
-  const arches = name.slice(dash + 1).split("+")
-  if (!NODE_PLATFORMS.has(platform) || arches.some(it => !/^[a-z0-9]+$/.test(it))) {
+  const arches = archList.split("+")
+  if ([...arches, ...variants].some(it => !/^[a-z0-9]+$/.test(it))) {
     return false
   }
   if (platform !== target.platform) {

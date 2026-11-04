@@ -302,7 +302,7 @@ Relatedly, `nativeModules.buildDependenciesFromSource` no longer skips the nativ
 
 Packages built with [prebuildify](https://github.com/prebuild/prebuildify) (loaded through `node-gyp-build`) publish their native addon for every supported target in one npm package, under `prebuilds/<platform>-<arch>/` — for example `prebuilds/darwin-x64+arm64/`, `prebuilds/linux-arm64/`, `prebuilds/win32-x64/`. `node-gyp-build` only ever loads the directory matching `process.platform` and `process.arch`, so v26 shipped every other target's binaries as dead weight, often several MB per dependency.
 
-v27 leaves out a directory directly inside a package's `prebuilds/` directory when its name is of that `<platform>-<arch>[+<arch>…]` form and names another platform, or another architecture than the one being packed. For a macOS universal build both slices keep every macOS architecture, so they stay identical for the merge. Directories with any other name are kept.
+v27 leaves out a directory directly inside a package's `prebuilds/` directory when its name is of that `<platform>-<arch>[+<arch>…][-<variant>]` form (e.g. `linux-x64-musl`) and names another platform, or another architecture than the one being packed. For a macOS universal build both slices keep every macOS architecture, so they stay identical for the merge. Directories with any other name are kept.
 
 ```json5
 { "build": { "nativeModules": { "excludeForeignPrebuilds": false } } } // package every prebuild, as in v26

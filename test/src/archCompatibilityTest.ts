@@ -228,12 +228,20 @@ describe("isForeignPrebuildDir", () => {
     ["darwin-x64", "darwin", null, false],
     ["darwin-arm64", "darwin", null, false],
     ["linux-arm64", "darwin", null, true],
+    // libc / simulator variants: kept for the target's own platform/arch, dropped otherwise
+    ["linux-x64-musl", "linux", "x64", false],
+    ["linux-arm64-musl", "linux", "x64", true],
+    ["linux-x64-musl", "win32", "x64", true],
+    ["ios-arm64-simulator", "darwin", "arm64", true],
+    ["ios-arm64", "darwin", null, true],
     // names that are not node-gyp-build target directories are always kept
     ["README.md", "win32", "x64", false],
     ["foo-bar", "win32", "x64", false],
     ["linux-x64.tar.gz", "win32", "x64", false],
     ["-x64", "win32", "x64", false],
     ["linux-", "win32", "x64", false],
+    ["linux-x64-", "win32", "x64", false],
+    ["windows-x64", "linux", "x64", false],
   ]
   for (const [name, platform, cpu, expected] of cases) {
     test(`${name} for ${platform}-${cpu ?? "any"} -> ${expected}`, ({ expect }) => {
