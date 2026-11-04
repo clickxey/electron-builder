@@ -213,6 +213,7 @@ export async function computeNodeModuleFileSets(
 
   // the options this pack uses for the app files too (e.g. mac → mas → masDev cascaded), not always the platform section's own
   const nodeModuleExcludedExts = getNodeModuleExcludedExts(platformPackager, platformSpecificBuildOptions)
+  let excludedSourceMaps = 0
   // serial execution because copyNodeModules is concurrent and so, no need to increase queue/pressure
   const result = new Array<ResolvedFileSet>()
   let index = 0
@@ -228,6 +229,7 @@ export async function computeNodeModuleFileSets(
     const matcher = new FileMatcher(source, destination, mainMatcher.macroExpander, mainMatcher.patterns)
     const copier = new NodeModuleCopyHelper(matcher, platformPackager)
     const files = await copier.collectNodeModules(dep, nodeModuleExcludedExts, path.relative(mainMatcher.to, destination))
+    excludedSourceMaps += copier.excludedSourceMaps
     result[index++] = validateFileSet({ src: source, destination, files, metadata: copier.metadata })
 
     log.debug({ dep: dep.name, from: log.filePath(source), to: log.filePath(destination), filesCount: files.length }, "identified module")
@@ -243,7 +245,24 @@ export async function computeNodeModuleFileSets(
     const destination = path.join(mainMatcher.to, NODE_MODULES, dep.name)
     await collectNodeModules(dep, destination)
   }
+  announceExcludedSourceMaps(excludedSourceMaps)
   return result
+}
+
+/** Announced once per process; a build can pack several targets. */
+let excludedSourceMapsAnnounced = false
+
+function announceExcludedSourceMaps(count: number): void {
+  if (count === 0 || excludedSourceMapsAnnounced) {
+    return
+  }
+  excludedSourceMapsAnnounced = true
+  log.warn(
+    { count },
+    "electron-builder v27 no longer packages the source maps (*.js.map, *.mjs.map, *.cjs.map, *.css.map) and declaration maps (*.d.ts.map) of node_modules dependencies. " +
+      "Return true from onNodeModuleFile for the maps you need. " +
+      `See ${BUILD_CHANGES_URL}#dependency-source-maps-are-excluded`
+  )
 }
 
 type CollectedNodeModules = { nodeModules: NodeModuleInfo[]; logSummary: ModuleManager["logSummary"] }

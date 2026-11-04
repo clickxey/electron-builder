@@ -182,25 +182,16 @@ exports[`failed peer dep 2`] = `
                 "core.min.js": {
                   "size": "<size>",
                 },
-                "core.min.js.map": {
-                  "size": "<size>",
-                },
                 "library.js": {
                   "size": "<size>",
                 },
                 "library.min.js": {
                   "size": "<size>",
                 },
-                "library.min.js.map": {
-                  "size": "<size>",
-                },
                 "shim.js": {
                   "size": "<size>",
                 },
                 "shim.min.js": {
-                  "size": "<size>",
-                },
-                "shim.min.js.map": {
                   "size": "<size>",
                 },
               },
@@ -7792,22 +7783,13 @@ exports[`failed peer dep 2`] = `
                 "locales.min.js": {
                   "size": "<size>",
                 },
-                "locales.min.js.map": {
-                  "size": "<size>",
-                },
                 "moment-with-locales.js": {
                   "size": "<size>",
                 },
                 "moment-with-locales.min.js": {
                   "size": "<size>",
                 },
-                "moment-with-locales.min.js.map": {
-                  "size": "<size>",
-                },
                 "moment.min.js": {
-                  "size": "<size>",
-                },
-                "moment.min.js.map": {
                   "size": "<size>",
                 },
               },
@@ -9779,6 +9761,7 @@ exports[`failed peer dep 2`] = `
 
 exports[`failed peer dep 3`] = `
 [
+  "app-update.yml",
   "app.asar",
 ]
 `;
@@ -10044,6 +10027,7 @@ exports[`symlinks everywhere with static framework 3`] = `
 
 exports[`symlinks everywhere with static framework 4`] = `
 [
+  "app-update.yml",
   "app.asar",
   "app.asar.unpacked/node_modules/hello-world/hello-world-framework.sh",
   {
